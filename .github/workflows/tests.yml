@@ -1,0 +1,58 @@
+name: tests
+
+# The suite has only ever run on one Windows laptop, on two interpreters that
+# exist nowhere else. This proves it runs on a machine nobody configured — which
+# is the claim the README makes, and the one a stranger would check first.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is what the working poll loop runs under; 3.13 is the second
+        # verified runtime. Ubuntu is the VPS target, Windows is today's host —
+        # seven test classes are Windows-only and skip on Linux, so running both
+        # is what stops the platform gating rotting unnoticed.
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: python -m pip install -r src/requirements.txt
+
+      - name: Run the suite
+        # The suite is offline by design — no network, no database, no fixtures
+        # beyond the ones committed. If this step ever needs a service container,
+        # something has regressed.
+        run: python -m unittest discover -s tests -t . -v
+
+      - name: Fail if platform gating broke
+        # Absolute counts expire; this check does not. Seven classes are guarded
+        # by skipUnless(WINDOWS), so a Linux run reporting zero skips means the
+        # guard stopped working and Windows-only code is being silently skipped
+        # on every platform.
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          out=$(python -m unittest discover -s tests -t . 2>&1 | tail -5)
+          echo "$out"
+          if ! echo "$out" | grep -q 'skipped='; then
+            echo "::error::Linux run reported no skips. The skipUnless(WINDOWS) gating is broken."
+            exit 1
+          fi

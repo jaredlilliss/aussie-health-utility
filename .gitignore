@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+
+# Secrets — never commit. The repo carried a live DB password in five places
+# until 12/08/2026; git history keeps it forever, so the cheap defence is to
+# stop the next one rather than only clean up the last.
+.env
+.env.*
+!.env.example
+*.pgpass
+pgpass.conf
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+secrets.*
+
+# Local data and dumps — public data only, but large and rebuildable, and a
+# dump is the one artefact that would carry the whole cache into a commit.
+*.dump
+*.sql.gz
+MBS-XML-*.XML

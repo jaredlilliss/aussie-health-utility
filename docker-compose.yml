@@ -1,0 +1,27 @@
+# Aussie Health Utility: local cache database.
+# First boot of an empty volume auto-runs everything in db/init/ (see
+# 03_Local_Cache/Local_Deployment.md). To re-initialise from scratch:
+#   docker compose down -v && docker compose up -d
+services:
+  db:
+    image: postgres:16
+    container_name: aussie_health_db
+    environment:
+      POSTGRES_USER: rted
+      # Supplied from the environment, never committed. Compose fails with
+      # this message rather than starting with a known-to-the-world default.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env or the shell before compose up}
+      POSTGRES_DB: aussie_health
+    ports:
+      - "127.0.0.1:5432:5432"             # loopback only, never the LAN
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rted -d aussie_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

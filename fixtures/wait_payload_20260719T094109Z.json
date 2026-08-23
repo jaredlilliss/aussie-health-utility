@@ -1,0 +1,23 @@
+{
+  "hospitalDetails": [
+    {
+      "hospitalID": 298,
+      "hospitalName": "Walcha Residential Aged Care",
+      "address": "South Street",
+      "postCode": "NSW 2354",
+      "phone": "02 6774 2400",
+      "facilityIdentifier": "J719",
+      "location": "Walcha",
+      "latitude": -30.987111,
+      "longitude": 151.59073,
+      "districtName": "Hunter New England Local Health District",
+      "url": "",
+      "parkingUrl": ""
+    }
+  ],
+  "reportingHospitals": [
+    {
+      "totalHospitalsCount": 60
+    }
+  ]
+}

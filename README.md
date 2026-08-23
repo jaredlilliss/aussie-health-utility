@@ -1,0 +1,130 @@
+> **Public mirror.** This is a curated snapshot of a private working repository,
+> published for portfolio review. The working repo's history, correspondence
+> records, and operational runbooks stay private; everything here — schema,
+> pipeline code, tests, and the engineering log — is the real thing.
+> Source-available for reading; all rights reserved.
+
+# Aussie Health Utility
+
+A data pipeline for Australian public health information, and the documentation
+that goes with it. Three sources feed one local Postgres cache: **NSW emergency
+department queues** (live), **pharmacy hours and open/closed status** (pending
+directory access), and **Medicare Benefits Schedule fees plus typical specialist
+costs** (MBS loaded, costs pending permission).
+
+Privacy-by-design, structurally rather than aspirationally: there are no tables
+or columns for users, accounts, sessions, devices or any person identifier, and
+`03_Local_Cache/Postgres_Cache_Schema.md` maintains that as a permanent
+forbidden list rather than a convention.
+
+---
+
+## Run the tests
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+That is the whole setup. **147 tests, offline, no database, no fixtures beyond
+the ones committed, in about 0.03 seconds.** No virtualenv needed to run them
+and no service to stand up first — the Postgres writers are exercised against a
+fake cursor. Verified on Python 3.12 and 3.13, Windows and Ubuntu.
+
+Seven test classes are guarded by `skipUnless(WINDOWS)` and skip on Linux. A
+Linux run reporting *zero* skips means that gating has broken, not that
+everything passed — CI asserts this explicitly rather than checking a count,
+because counts expire.
+
+---
+
+## Is it actually running?
+
+**Yes, and lifetime coverage is about 15%. That number is the interesting part.**
+
+Since 20 July 2026 the collector has captured **16,520 snapshots** — 280 cycles
+across exactly 59 reporting hospitals, no ragged cycles, no cleaning step. Of
+276 logged runs, **268 succeeded**. Seven of the eight failures were upstream
+connection errors to the NSW Health host. The eighth was a deliberate failure
+injection against a dead local port, to prove the backoff logic fires.
+
+The gap is not a code failure. The collector runs on a Windows laptop, and
+Windows 11 Modern Standby suspends desktop processes when the machine idles. The
+process does not crash — it starts, completes a cycle, enters its wait, and is
+frozen mid-`sleep()` by the operating system. It resumes looking healthy, which
+is why it took several days and four wrong theories to find.
+
+Each of those theories is recorded in the repository rather than quietly
+dropped, two of them in pull requests that exist solely to retract earlier
+claims:
+
+- **Task Scheduler as the launcher** — five configurations tested. This machine
+  runs `cmd.exe` from the scheduler happily and has never once launched Python
+  from it.
+- **A per-interpreter problem** — both installed Python versions run the full
+  cycle identically. Retracted in PR #11.
+- **File permissions, antivirus interference, or path redirection** — ruled out
+  by inspecting loaded modules and by a fresh process writing the same path.
+- **Interposing `cmd.exe` at logon** — armed as an experiment, ran on a real
+  reboot, failed. The negative result is what closed the question.
+
+The diagnosis came from a live stack dump (`py-spy dump`) of the frozen process,
+which placed it inside its between-cycle wait rather than dead at startup, and
+from correlating Kernel-Power 506/507 events against the freeze window. A
+supporting finding: the wake log that appeared to prove the machine was awake
+actually recorded *wakes* — its entries land in the same second as
+standby-exit events, so a machine surfacing for one second every fifteen minutes
+looks identical to one that never slept.
+
+The remedy is a $5/month always-on host, specified in
+`03_Local_Cache/VPS_Migration.md`. Not another launcher.
+
+**Why gaps are permanent.** The upstream API serves current state only; there is
+no historical endpoint. A missed reading cannot be backfilled, ever. That
+constraint is why the collector was built before any user interface — the
+interface can be written at any time, the data cannot.
+
+---
+
+## Two constraints on describing this data
+
+**It is not a waiting *time*.** The feed publishes a count of people waiting for
+treatment. There is no minutes field anywhere in it.
+
+**It is not "statewide".** This covers the 59 emergency departments that publish
+live counts. NSW has 176.
+
+---
+
+## Layout
+
+| Path | What it is |
+| --- | --- |
+| `src/` | The pipeline. `ed_waits/` is the NSW ED package; `ingest_*.py` are the entry points. |
+| `scripts/` | Host-side launchers, Windows-specific, all retiring at the VPS cutover. See `scripts/README.md`. |
+| `tests/` | The suite. Offline by design. |
+| `db/init/` | Schema DDL. Kept in step with the vault doc; the two move together in the same PR. |
+| `01_Architecture/` | System overview, privacy posture, non-goals. |
+| `02_Data_Pipelines/` | One document per source, including what was tried and disproven. |
+| `03_Local_Cache/` | Schema rationale, deployment status ledger, VPS migration plan. |
+
+---
+
+## Conventions
+
+Work ships as **one pull request per finding, squash-merged, with the evidence
+in the commit body — including what was disproven.** A retracted theory left
+standing costs the next reader a day, which is why PRs #11 and #18 exist.
+
+The vault documents under `0*_` are the source of truth for behaviour. Code and
+documentation move together in the same change; the status ledger in
+`Local_Deployment.md` never claims a run that did not happen.
+
+---
+
+## Status
+
+Emergency department collection works end to end. Pharmacy data is blocked on
+directory onboarding, not on code. Typical-cost data is blocked on a written
+permission request to the responsible department. There is no user-facing
+application yet — the current surface is a report generator and a dry-run
+printer, and that is a sequencing decision rather than an omission.
