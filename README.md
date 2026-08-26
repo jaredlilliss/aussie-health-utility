@@ -94,6 +94,31 @@ interface can be written at any time, the data cannot.
 
 ---
 
+## Attribution and licensing
+
+**NSW emergency department data is © State of New South Wales (NSW Ministry of
+Health), licensed CC BY 4.0.** The NSW Health copyright notice licenses all its
+material under CC BY 4.0 and explicitly encourages reuse of publicly funded
+information. The required attribution form, recorded 20 July 2026 and reproduced
+here verbatim, must appear wherever this data is displayed:
+
+> © State of New South Wales NSW Ministry of Health. For current information go
+> to www.health.nsw.gov.au.
+
+Medicare Benefits Schedule item data is Commonwealth material. A written request
+to display typical-cost data with attribution was sent to the Department of
+Health on 10 August 2026 and has not been answered; **until it is, typical-cost
+data is not displayed.** That is why the MBS table holds item reference data and
+the typical-cost table is empty — a permission boundary, not an unfinished
+feature.
+
+Pharmacy directory data is not collected at all pending directory onboarding.
+Those tables exist and are empty by design.
+
+The pipeline code itself is source-available for reading; all rights reserved.
+
+---
+
 ## Two constraints on describing this data
 
 **It is not a waiting *time*.** The feed publishes a count of people waiting for
