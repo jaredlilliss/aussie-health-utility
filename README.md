@@ -6,6 +6,11 @@
 
 # Aussie Health Utility
 
+**Live: [the Queue Board](https://jaredlilliss.github.io/queue-board/)** — 59 NSW
+emergency departments, current counts, five weeks of collection, and how much of
+each hospital's swing is shared with the rest of the state. Refreshed every three
+hours from the collector described below.
+
 A data pipeline for Australian public health information, and the documentation
 that goes with it. Three sources feed one local Postgres cache: **NSW emergency
 department queues** (live), **pharmacy hours and open/closed status** (pending
@@ -155,10 +160,76 @@ documentation move together in the same change; the status ledger in
 
 ---
 
+## What it found
+
+Three things, from 77,000 readings. They are on the site above; the reasoning is
+here because the method is the part worth checking.
+
+**Monday is the busiest day of the week** — 6.06 people waiting on average
+against Sunday's 3.99, a 52% swing. This one survives the collection gaps
+described below, because it pools raw readings rather than comparing whole days
+to each other: a day with six readings simply contributes six.
+
+**Emergency department load is mostly local.** When one department is unusually
+busy, the rest of the state largely is not. The most system-coupled hospital
+shares about a sixth of its variation with everywhere else; the quieter ones are
+statistically indistinguishable from no relationship at all.
+
+The naive version of that second finding would have been wrong in a way that
+looked right. Correlating raw counts between any two hospitals produces a strong
+number — but only because both are quiet at dawn and busy in the evening, so the
+measurement rediscovers the daily cycle and presents it as a result. So each
+reading has **that hospital's own average for that hour of day** subtracted
+first, leaving only what is unusual for it at that time. The comparison series
+then **excludes the hospital being measured**, because otherwise a large hospital
+partly correlates with itself and scores too high.
+
+The noise floor is stated rather than hidden: at 1,313 shared observations the
+standard error of a correlation is about 0.028, so anything inside ±0.05 cannot
+be distinguished from zero and is labelled as noise instead of being reported as
+a negative relationship.
+
+**One caveat is load-bearing and cost the tidier headline.** Coupling tracks
+hospital size — the busier half averages 0.22 against 0.14 for the quieter half.
+The tempting reading is that metropolitan hospitals share demand. That is not
+claimed, because a large part of the effect is arithmetic rather than medicine: a
+small department's count is dominated by whether one or two people happened to
+arrive, and that randomness dilutes any shared signal. A low score at a small
+hospital is partly a measurement artefact.
+
+---
+
+## The collection is not clean, and the interface says so
+
+Of the days collected, **only four captured 90 or more of the 96 possible
+readings**. For its first month the collector ran on the Windows laptop described
+above, so most days are partial — some hold a single reading — and five days
+captured nothing at all. Since the move to an always-on host on 23 August,
+nothing is missing.
+
+That is why the interface leads with **readings captured per day** rather than a
+daily average line. Charting a mean computed from one reading beside a mean
+computed from ninety-six would produce a clean, plausible, meaningless chart. The
+per-hospital table shows observed-day coverage for the same reason: a hospital
+seen on fewer days has a less reliable average, and hiding that would make the
+table look more certain than the data supports.
+
+**A detail that falls out of the two collectors overlapping.** Cron fires on
+exact quarter hours, so readings from the always-on host land at `:00`, `:15`,
+`:30` and `:45` — 24 of each, 96 a day, never drifting. The laptop ran a sleeping
+loop, so its readings landed wherever it happened to wake: `:02`, `:11`, `:26`,
+`:39`. The cutover day holds 115 readings rather than 96 — the 96 clean ones plus
+19 drifting ones from the laptop still running alongside. Both were live for a
+few hours, and **no reading was double-counted: across all 77,000 rows there is
+not one duplicate of the same hospital at the same instant.**
+
+---
+
 ## Status
 
-Emergency department collection works end to end. Pharmacy data is blocked on
-directory onboarding, not on code. Typical-cost data is blocked on a written
-permission request to the responsible department. There is no user-facing
-application yet — the current surface is a report generator and a dry-run
-printer, and that is a sequencing decision rather than an omission.
+Emergency department collection works end to end, and **now has a public
+interface** — see the link at the top. Pharmacy data is blocked on directory
+onboarding, not on code. Typical-cost data is blocked on a written permission
+request to the responsible department, sent 10 August 2026 and not yet answered;
+until it is, that table stays empty by permission boundary rather than by
+omission. The command-line report generator and dry-run printer remain.
