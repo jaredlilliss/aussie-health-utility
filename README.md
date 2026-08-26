@@ -39,19 +39,28 @@ because counts expire.
 
 ## Is it actually running?
 
-**Yes, and lifetime coverage is about 15%. That number is the interesting part.**
+**Yes — on an always-on Melbourne host since 23 August 2026, at 96 of a possible
+96 cycles a day.**
 
-Since 20 July 2026 the collector has captured **16,520 snapshots** — 280 cycles
-across exactly 59 reporting hospitals, no ragged cycles, no cleaning step. Of
-276 logged runs, **268 succeeded**. Seven of the eight failures were upstream
-connection errors to the NSW Health host. The eighth was a deliberate failure
-injection against a dead local port, to prove the backoff logic fires.
+Since 20 July 2026 the collector has captured **77,054 snapshots** across **1,306
+cycles** and exactly 59 reporting hospitals, no ragged cycles, no cleaning step.
+Of **1,275 logged runs, 1,257 succeeded**. Most failures were upstream connection
+errors to the NSW Health host; one was a deliberate failure injection against a
+dead local port, to prove the backoff logic fires.
 
-The gap is not a code failure. The collector runs on a Windows laptop, and
-Windows 11 Modern Standby suspends desktop processes when the machine idles. The
-process does not crash — it starts, completes a cycle, enters its wait, and is
-frozen mid-`sleep()` by the operating system. It resumes looking healthy, which
-is why it took several days and four wrong theories to find.
+**Lifetime coverage is about 35%, and the shape of that number is the interesting
+part — nearly every missing cycle is from the first month.** A spot check on 27
+August returned **96 cycles in the preceding 24 hours, zero failed runs, and zero
+outages across 5,664 snapshots**, with the newest reading three minutes old. Cron
+with `flock -n` supplies the single-instance guarantee, which is why the cadence
+is exactly 96 rather than approximately 96.
+
+The gap was never a code failure, and the diagnosis is worth keeping. For its
+first month the collector ran on a Windows laptop, where Modern Standby suspends
+desktop processes once the machine idles. The process did not crash — it started,
+completed a cycle, entered its wait, and was frozen mid-`sleep()` by the operating
+system. It resumed looking healthy, which is why it took several days and four
+wrong theories to find.
 
 Each of those theories is recorded in the repository rather than quietly
 dropped, two of them in pull requests that exist solely to retract earlier
@@ -75,7 +84,7 @@ actually recorded *wakes* — its entries land in the same second as
 standby-exit events, so a machine surfacing for one second every fifteen minutes
 looks identical to one that never slept.
 
-The remedy is a $5/month always-on host, specified in
+The remedy was a $5/month always-on host, specified in
 `03_Local_Cache/VPS_Migration.md`. Not another launcher.
 
 **Why gaps are permanent.** The upstream API serves current state only; there is
