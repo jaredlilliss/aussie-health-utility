@@ -25,7 +25,7 @@ forbidden list rather than a convention.
 python -m unittest discover -s tests -t .
 ```
 
-That is the whole setup. **147 tests, offline, no database, no fixtures beyond
+That is the whole setup. **148 tests, offline, no database, no fixtures beyond
 the ones committed, in about 0.03 seconds.** No virtualenv needed to run them
 and no service to stand up first — the Postgres writers are exercised against a
 fake cursor. Verified on Python 3.12 and 3.13, Windows and Ubuntu.
