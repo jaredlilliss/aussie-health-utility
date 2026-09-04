@@ -30,9 +30,9 @@ makes a *running* backup indistinguishable from one that never started. Worth
 porting #24's fix — a sentinel written to a different directory, plus a count
 reported on recovery.
 
-**These scripts assume absolute paths under `C:\Users\Xi\`.** Deliberate — they
-are machine-local by definition — but it means they are documentation on any
-other machine, not runnable code.
+**These scripts assume absolute paths under the machine's user profile.**
+Deliberate — they are machine-local by definition — but it means they are
+documentation on any other machine, not runnable code.
 
 **`backup_db.py` has not run automatically since 05/08/2026.** Its Startup
 shortcut launches `pythonw.exe`, which is the exact non-interactive launch

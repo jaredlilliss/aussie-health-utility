@@ -12,10 +12,10 @@
 # redirects into "%LOCALAPPDATA%\..." too, so the same gap would kill it
 # silently. This script must not be able to fail the same way.
 
-$base   = 'C:\Users\Xi\AppData\Local\AussieHealth'
+$base   = "$env:USERPROFILE\AppData\Local\AussieHealth"
 $log    = Join-Path $base 'run_poll_ps.log'
 $py     = 'C:\Program Files\Python313\python.exe'
-$script = 'C:\Users\Xi\OneDrive\Desktop\cc\project\Aussie_Health_Docs_v2\scripts\poll_waits.py'
+$script = "$env:USERPROFILE\OneDrive\Desktop\cc\project\Aussie_Health_Docs_v2\scripts\poll_waits.py"
 
 function Note($m) {
     Add-Content -Path $log -Value ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) -Encoding utf8
@@ -34,7 +34,7 @@ Add-Content -Path (Join-Path $base 'wake.log') `
     -Value ("[{0:ddd dd/MM/yyyy HH:mm:ss.ff}] wake (ps)" -f (Get-Date)) -Encoding utf8
 
 if (-not $env:LOCALAPPDATA) {
-    $env:LOCALAPPDATA = 'C:\Users\Xi\AppData\Local'
+    $env:LOCALAPPDATA = "$env:USERPROFILE\AppData\Local"
     Note 'LOCALAPPDATA was UNSET -- injected for the child process'
 }
 

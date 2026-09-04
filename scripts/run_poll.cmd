@@ -11,6 +11,6 @@ REM Uses the ALL-USERS 3.13 interpreter (outside %LOCALAPPDATA%), which is
 REM the one Task Scheduler is willing to run.
 set "LOG=%LOCALAPPDATA%\AussieHealth\run_poll.log"
 echo [%DATE% %TIME%] launcher start >> "%LOG%"
-"C:\Program Files\Python313\pythonw.exe" "C:\Users\Xi\OneDrive\Desktop\cc\project\Aussie_Health_Docs_v2\scripts\poll_waits.py" >> "%LOG%" 2>&1
+"C:\Program Files\Python313\pythonw.exe" "%USERPROFILE%\OneDrive\Desktop\cc\project\Aussie_Health_Docs_v2\scripts\poll_waits.py" >> "%LOG%" 2>&1
 echo [%DATE% %TIME%] exit=%ERRORLEVEL% >> "%LOG%"
 exit /b %ERRORLEVEL%
