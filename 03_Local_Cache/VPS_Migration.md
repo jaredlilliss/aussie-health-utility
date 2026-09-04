@@ -14,7 +14,7 @@ Why this exists: the laptop is a personal machine on Modern Standby and measures
 
 ## Decision to make FIRST: the existing snapshot series
 
-The [[Local_Deployment]] line "the cache is rebuildable at any time" is true for `facilities` (re-fetchable from Data.NSW) and the MBS load (re-parseable from the XML) — but **not for `ed_wait_snapshots`**. The RTED API serves *current* state only; the rows collected since 20/07 are the only copy of that history, and every hour before cutover adds permanent holes only to the laptop's copy. **Count as of 07/08/2026: 14,750 rows** across 59 facilities, growing roughly 240/day while the laptop is awake. Any figure written here is stale within hours — **run `select count(*) from ed_wait_snapshots` rather than trusting this line**, and never `pg_stat_user_tables.n_live_tup`, which is an estimate and reported one table here as 0 when it held 6,045 rows. (Previous values recorded in this doc: ~5,900, then 7,434 on 04/08 — both already wrong when read.) **It is no longer the *only* copy:** restore-verified dumps now live in `OneDrive\Backups\AussieHealth\` (see [[Local_Deployment]]), so the migration starts from a backup rather than a single live cluster.
+The [[Local_Deployment]] line "the cache is rebuildable at any time" is true for `facilities` (re-fetchable from Data.NSW) and the MBS load (re-parseable from the XML) — but **not for `ed_wait_snapshots`**. The RTED API serves *current* state only; the rows collected since 20/07 are the only copy of that history, and every hour before cutover adds permanent holes only to the laptop's copy. **Count as of 07/08/2026: 14,750 rows** across 59 facilities, growing roughly 240/day while the laptop is awake. Any figure written here is stale within hours — **run `select count(*) from ed_wait_snapshots` rather than trusting this line**, and never `pg_stat_user_tables.n_live_tup`, which is an estimate and reported one table here as 0 when it held 6,045 rows. (Previous values recorded in this doc: ~5,900, then 7,434 on 04/08 — both already wrong when read.) **It is no longer the *only* copy:** restore-verified dumps now live in the laptop's backup folder (see [[Local_Deployment]]), so the migration starts from a backup rather than a single live cluster.
 
 - **Migrate the series (recommended):** one `pg_dump` on the laptop, one restore on the VPS. Ten minutes, keeps the history contiguous.
 - **Start fresh:** VPS begins empty; laptop copy becomes a dead archive. Acceptable only if the 20/07–cutover history is genuinely disposable.
@@ -89,7 +89,7 @@ Run steps 1–4 as root. **Everything from step 5 onward runs as `poller`** (`su
    ```
    `flock -n` gives the single-instance guarantee the Windows mutex used to; cron itself is the cadence, satisfying the 15-min policy floor in [[NSW_Health_JSON_Engine]]. Put `DATABASE_URL` in the crontab itself (`poller`-owned, mode 0600) — **not `/etc/environment`, which is world-readable 0644**, so every account on the box could read the password. Never commit it either way.
 10. **Verify** — after two cycles: `select id, ok, detail from sync_runs order by id desc limit 4;` should show fresh `status=ok` rows ~15 min apart. `where not ok` is the health query, exactly as on the laptop.
-11. **Backups — do not skip this step.** Without it the migration is a *downgrade*: today the laptop's series has restore-verified dumps in `OneDrive\Backups\AussieHealth\`, and a VPS with no backup would make a $5 instance the sole copy of the one table that cannot be rebuilt. Nightly dump plus an off-box copy:
+11. **Backups — do not skip this step.** Without it the migration is a *downgrade*: today the laptop's series has restore-verified dumps in its backup folder, and a VPS with no backup would make a $5 instance the sole copy of the one table that cannot be rebuilt. Nightly dump plus an off-box copy:
     ```cron
     17 3 * * * pg_dump "$DATABASE_URL" -Fc -f /home/poller/backups/aussie_health-$(date +\%Y\%m\%d).dump && find /home/poller/backups -name '*.dump' -mtime +14 -delete
     ```
@@ -122,7 +122,7 @@ Once the VPS shows a day of `status=ok` rows. **There are four Startup shortcuts
 | `AussieHealthWaitsPoll.lnk` | the loop itself |
 | `AussieHealthPollSupervisor.lnk` | **restarts the loop whenever the heartbeat goes stale** — leave it and the laptop resurrects its own poller against `nsw.gov.au` indefinitely, duplicating a feed the VPS is already polling |
 | `AussieHealthPollLoopViaCmd.lnk` | a launcher experiment, still armed |
-| `AussieHealthDbBackup.lnk` | keeps dumping the *frozen* laptop database into `OneDrive\Backups` with fresh timestamps — dumps whose filenames lie about how current their contents are, which is worse than no dumps at all |
+| `AussieHealthDbBackup.lnk` | keeps dumping the *frozen* laptop database into the laptop's backup folder with fresh timestamps — dumps whose filenames lie about how current their contents are, which is worse than no dumps at all |
 
 **Retire the supervisor first**, or it will restart the loop you just stopped.
 

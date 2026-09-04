@@ -24,9 +24,9 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-AH = r"C:\Users\Xi\AppData\Local\AussieHealth"
+AH = os.path.join(os.environ["LOCALAPPDATA"], "AussieHealth")
 PG_DUMP = os.path.join(AH, "pgsql", "bin", "pg_dump.exe")
-DEST = r"C:\Users\Xi\OneDrive\Backups\AussieHealth"
+DEST = os.path.join(os.environ["USERPROFILE"], "OneDrive", "Backups", "AussieHealth")
 LOG = os.path.join(AH, "backup_db.log")
 KEEP_DAYS = 14
 # The cluster does not auto-start; a logon backup can easily beat it up.
